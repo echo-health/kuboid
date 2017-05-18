@@ -1,0 +1,92 @@
+{
+  "name": "kubemng",
+  "version": "0.0.1",
+  "private": true,
+  "engines": {
+    "node": ">=6.10.2"
+  },
+  "bin": {
+    "kubemng": "bin/kubemng.js"
+  },
+  "dependencies": {
+    "colors": "^1.1.2",
+    "commander": "^2.9.0",
+    "yamljs": "^0.2.10",
+    "inquirer": "^3.0.6"
+  },
+  "devDependencies": {
+    "dotenv": "^2.0.0",
+    "eslint": "^3.12.0",
+    "eslint-config-airbnb-base": "^11.1.3",
+    "eslint-plugin-import": "^2.2.0",
+    "jest": "^19.0.2",
+    "nsp": "^2.6.2",
+    "prettier": "^1.3.1"
+  },
+  "eslintConfig": {
+    "extends": "airbnb-base",
+    "env": {
+      "jest": true,
+      "jasmine": true
+    },
+    "rules": {
+      "arrow-parens": [
+        "error",
+        "as-needed"
+      ],
+      "comma-dangle": [
+        "error",
+        "always-multiline"
+      ],
+      "import/no-dynamic-require": "off",
+      "import/no-extraneous-dependencies": [
+        "error",
+        {
+          "devDependencies": true
+        }
+      ],
+      "indent": "off",
+      "no-mixed-operators": "off",
+      "wrap-iife": "off",
+      "no-confusing-arrow": "off",
+      "space-before-function-paren": "off",
+      "generator-star-spacing": "off",
+      "max-len": [
+        "error",
+        240
+      ],
+      "no-param-reassign": [
+        "error",
+        {
+          "props": false
+        }
+      ],
+      "no-multi-assign": "off"
+    }
+  },
+  "jest": {
+    "collectCoverage": true,
+    "collectCoverageFrom": [
+      "database/**/*.js",
+      "environment/**/*.js",
+      "server/**/*.js",
+      "storage/**/*.js"
+    ],
+    "coverageReporters": [
+      "json",
+      "lcov",
+      "text-summary"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:echo-health/kubemng.git"
+  },
+  "author": "Echo",
+  "contributors": [
+    {
+      "name": "Ryan McGrath",
+      "email": "ryan.mcgrath@echo.co.uk"
+    }
+  ]
+}
