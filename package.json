@@ -1,12 +1,12 @@
 {
-  "name": "kubemng",
+  "name": "kuboid",
   "version": "0.0.1",
   "private": true,
   "engines": {
     "node": ">=6.10.2"
   },
   "bin": {
-    "kubemng": "bin/kubemng.js"
+    "kuboid": "bin/kuboid.js"
   },
   "dependencies": {
     "colors": "^1.1.2",
@@ -80,7 +80,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:echo-health/kubemng.git"
+    "url": "git@github.com:echo-health/kuboid.git"
   },
   "author": "Echo",
   "contributors": [

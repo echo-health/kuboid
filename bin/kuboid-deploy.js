@@ -6,16 +6,13 @@ const kubernetes = require('../lib/kubernetes');
 const containers = require('../lib/containers');
 const clusters = require('../lib/clusters');
 const questions = require('../lib/questions');
+const logger = require('../lib/logger');
 
 let project = {};
 let image = {};
 let tag = {};
 let namespace = {};
 let deployments = {};
-
-const protectedNamespaces = n =>
-  n.metadata.name !== 'kube-system' &&
-  n.metadata.name !== 'kube-public';
 
 program.action(() => {
   questions.askProject()
@@ -24,10 +21,8 @@ program.action(() => {
     return Promise.resolve(clusters.all(project));
   })
   .then(questions.askCluster)
-  .then(cluster => {
-    kubernetes.setCluster(project, cluster.name);
-    return Promise.resolve(containers.images(project));
-  })
+  .then(cluster => kubernetes.setCluster(project, cluster.name))
+  .then(() => Promise.resolve(containers.images(project)))
   .then(questions.askContainerImage)
   .then(i => {
     image = i.name;
@@ -39,9 +34,7 @@ program.action(() => {
   .then(questions.askContainerImageTag)
   .then(t => {
     tag = t.id;
-    return Promise.resolve(kubernetes
-                           .namespaces()
-                           .filter(protectedNamespaces));
+    return kubernetes.namespaces();
   })
   .then(questions.askNamespace)
   .then(n => {
@@ -51,8 +44,15 @@ program.action(() => {
       d.containers.filter(c => c.image === image).length > 0
     );
     if (filteredDeployments.length === 0) {
-      console.log(colors.red(`ABORTING: namespace ${namespace.namespace} has to deployments using image ${image.image}`));
+      logger.info(colors.red(`ABORTING: namespace ${namespace.namespace} has no deployments using image ${image.image}`));
       process.exit(1);
+    }
+    const noop = filteredDeployments.filter(d =>
+      d.containers.filter(c => c.tag === tag).length > 0
+    );
+    if (filteredDeployments.length === noop.length) {
+      logger.info(`  ${colors.green('all deployments are up to date')}`);
+      process.exit(0);
     }
     deployments = filteredDeployments;
     return {
@@ -65,7 +65,7 @@ program.action(() => {
   .then(questions.confirmDeploy)
   .then(confirm => {
     if (confirm.confirm === true) {
-      console.log('deploying');
+      logger.info('deploying');
       kubernetes.setImages({
         deployments,
         tag,
