@@ -10,7 +10,6 @@ program
   .command('list')
   .arguments('<project> <namespace>')
   .action((project, namespace) => {
-    logger.info('loading configuration');
     config.list(project, namespace).forEach(v => {
       logger.info(colors.green(`${v.name}`));
     });
@@ -27,7 +26,6 @@ program
   .command('get-all')
   .arguments('<project> <namespace>')
   .action((project, namespace) => {
-    logger.info('loading configuration');
     config.getAll(project, namespace).forEach(v => {
       logger.info(colors.green(`${v.name}: ${v.value}`));
     });
