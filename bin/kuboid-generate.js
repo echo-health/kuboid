@@ -12,11 +12,26 @@ const collect = (val, memo) => {
   return memo;
 };
 
+
+const allSetOrNull = values => values.every((v, i, a) => {
+  if (i > 0) {
+    return a[i - 1] === undefined && v === undefined ||
+           a[i - 1] !== undefined && v !== undefined;
+  }
+  return true;
+});
+
 program
   .option('-k, --kuboid-variable [value]', 'variable to replace', collect, [])
+  .option('-p, --project [value]', 'gcp project to pull runtime-config from')
+  .option('-n, --namespace [value]', 'namespace to load secrets from')
   .option('-b, --base64', 'base64 encode replacements', false)
-  .arguments('<template> <project> <namespace>')
-  .action((template, project, namespace) => {
+  .arguments('<template>')
+  .action(template => {
+    if (!allSetOrNull([program.project, program.namespace])) {
+      logger.error('you must set both the -p and -n flag to load from runtime config');
+      process.exit(1);
+    }
     const fullPath = path.join(process.cwd(), template);
     const base64 = program.base64;
     if (!fs.existsSync(fullPath)) {
@@ -33,7 +48,7 @@ program
         };
       });
     } else {
-      namespaceConfig = config.getAll(project, namespace);
+      namespaceConfig = config.getAll(program.project, program.namespace);
     }
     generator.kubernetes(fullPath, namespaceConfig, base64);
   });
