@@ -19,7 +19,7 @@ questions.askProject()
   return Promise.resolve(clusters.all(project));
 })
 .then(questions.askCluster)
-.then(cluster => kubernetes.setCluster(project, cluster.name))
+.then(cluster => kubernetes.setCluster(project, cluster.obj))
 .then(() => Promise.resolve(containers.images(project)))
 .then(questions.askContainerImage)
 .then(i => {
