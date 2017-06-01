@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const colors = require('colors');
+const chalk = require('chalk');
 const kubernetes = require('../lib/kubernetes');
 const containers = require('../lib/containers');
 const clusters = require('../lib/clusters');
@@ -42,14 +42,14 @@ questions.askProject()
     d.containers.filter(c => c.image === image).length > 0
   );
   if (filteredDeployments.length === 0) {
-    logger.info(colors.red(`ABORTING: namespace ${namespace.namespace} has no deployments using image ${image.image}`));
+    logger.info(chalk.red(`ABORTING: namespace ${namespace.namespace} has no deployments using image ${image.image}`));
     process.exit(1);
   }
   const noop = filteredDeployments.filter(d =>
     d.containers.filter(c => c.tag === tag).length > 0
   );
   if (filteredDeployments.length === noop.length) {
-    logger.info(`  ${colors.green('all deployments are up to date')}`);
+    logger.info(`  ${chalk.green('all deployments are up to date')}`);
     process.exit(0);
   }
   deployments = filteredDeployments;
