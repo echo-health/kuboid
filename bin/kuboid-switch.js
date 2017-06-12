@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-// const program = require('commander');
 const clusters = require('../lib/clusters');
 const kubernetes = require('../lib/kubernetes');
 const questions = require('../lib/questions');
