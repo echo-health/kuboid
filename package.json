@@ -8,6 +8,11 @@
   "bin": {
     "kuboid": "bin/kuboid.js"
   },
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint .",
+    "format": "prettier --trailing-comma es5 --single-quote --tab-width 4 --write"
+  },
   "dependencies": {
     "chalk": "1.1.3",
     "cli-table": "0.3.1",
@@ -27,54 +32,11 @@
     "nsp": "2.6.3",
     "prettier": "1.4.4"
   },
-  "eslintConfig": {
-    "extends": "airbnb-base",
-    "env": {
-      "jest": true,
-      "jasmine": true
-    },
-    "rules": {
-      "arrow-parens": [
-        "error",
-        "as-needed"
-      ],
-      "comma-dangle": [
-        "error",
-        "always-multiline"
-      ],
-      "import/no-dynamic-require": "off",
-      "import/no-extraneous-dependencies": [
-        "error",
-        {
-          "devDependencies": true
-        }
-      ],
-      "indent": "off",
-      "no-mixed-operators": "off",
-      "wrap-iife": "off",
-      "no-confusing-arrow": "off",
-      "space-before-function-paren": "off",
-      "generator-star-spacing": "off",
-      "max-len": [
-        "error",
-        240
-      ],
-      "no-param-reassign": [
-        "error",
-        {
-          "props": false
-        }
-      ],
-      "no-multi-assign": "off"
-    }
-  },
   "jest": {
     "collectCoverage": true,
     "collectCoverageFrom": [
-      "database/**/*.js",
-      "environment/**/*.js",
-      "server/**/*.js",
-      "storage/**/*.js"
+      "lib/**/*.js",
+      "bin/**/*.js"
     ],
     "coverageReporters": [
       "json",

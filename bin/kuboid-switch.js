@@ -8,14 +8,16 @@ const chalk = require('chalk');
 
 let project = {};
 
-questions.askProject()
-.then(p => {
-  project = p.id;
-  return Promise.resolve(clusters.all(project));
-})
-.then(questions.askCluster)
-.then(cluster => {
-  kubernetes.setCluster(project, cluster.obj);
-  logger.info(chalk.green.bold(`switched to cluster ${cluster.obj.name}`));
-});
-
+questions
+    .askProject()
+    .then(p => {
+        project = p.id;
+        return Promise.resolve(clusters.all(project));
+    })
+    .then(questions.askCluster)
+    .then(cluster => {
+        kubernetes.setCluster(project, cluster.obj);
+        logger.info(
+            chalk.green.bold(`switched to cluster ${cluster.obj.name}`)
+        );
+    });
