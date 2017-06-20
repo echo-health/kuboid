@@ -1,6 +1,6 @@
 {
   "name": "@echo-health/kuboid",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "license": "MIT",
   "engines": {
     "node": ">=6.10.2"
