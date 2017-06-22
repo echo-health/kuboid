@@ -1,80 +1,223 @@
 #!/usr/bin/env node
 
 const chalk = require('chalk');
+const program = require('commander');
 const kubernetes = require('../lib/kubernetes');
 const containers = require('../lib/containers');
 const clusters = require('../lib/clusters');
 const questions = require('../lib/questions');
 const logger = require('../lib/logger');
 
-let project = {};
-let image = {};
-let tag = {};
-let namespace = {};
-let deployments = {};
+function getDeployments(namespace, image, tag) {
+    const deployments = kubernetes.deployments(namespace, image);
 
-questions
-    .askProject()
-    .then(p => {
-        project = p.id;
-        return Promise.resolve(clusters.all(project));
-    })
-    .then(questions.askCluster)
-    .then(cluster => kubernetes.setCluster(project, cluster.obj))
-    .then(() => Promise.resolve(containers.images(project)))
-    .then(questions.askContainerImage)
-    .then(i => {
-        image = i.name;
-        return Promise.resolve({
-            image,
-            tags: containers.tags(project.id, image),
-        });
-    })
-    .then(questions.askContainerImageTag)
-    .then(t => {
-        tag = t.id;
-        return kubernetes.namespaces();
-    })
-    .then(questions.askNamespace)
-    .then(n => {
-        namespace = n.name;
-        const filteredDeployments = kubernetes
-            .deployments(namespace)
-            .filter(
-                d => d.containers.filter(c => c.image === image).length > 0
-            );
-        if (filteredDeployments.length === 0) {
-            logger.info(
-                chalk.red(
-                    `ABORTING: namespace ${namespace.namespace} has no deployments using image ${image.image}`
-                )
+    if (deployments === null) {
+        logger.info(
+            chalk.red(
+                `ABORTING: namespace ${namespace.namespace} has no deployments using image ${image.image}`
+            )
+        );
+        process.exit(1);
+    }
+
+    const noop = deployments.filter(
+        d => d.containers.filter(c => c.tag === tag).length > 0
+    );
+
+    if (deployments.length === noop.length) {
+        logger.info(`${chalk.green('all deployments are up to date')}`);
+        process.exit(0);
+    }
+
+    return deployments;
+}
+
+function getProject(params) {
+    if (params.project) {
+        return Promise.resolve(params);
+    }
+
+    return questions.askProject().then(p => {
+        params.project = p.id;
+        return params;
+    });
+}
+
+function getCluster(params) {
+    const allClusters = clusters.all(params.project);
+
+    if (params.cluster) {
+        const cluster = allClusters.find(c => c.name === params.cluster);
+        if (!cluster) {
+            console.error(
+                chalk.red(`No cluster with name ${params.cluster}.`),
+                'Available clusters:',
+                allClusters.map(c => c.name)
             );
             process.exit(1);
+            return null;
         }
-        const noop = filteredDeployments.filter(
-            d => d.containers.filter(c => c.tag === tag).length > 0
-        );
-        if (filteredDeployments.length === noop.length) {
-            logger.info(`  ${chalk.green('all deployments are up to date')}`);
-            process.exit(0);
-        }
-        deployments = filteredDeployments;
-        return {
-            deployments,
-            tag,
-            image,
-            namespace,
-        };
-    })
-    .then(questions.confirmDeploy)
-    .then(confirm => {
-        if (confirm.confirm === true) {
-            logger.info('deploying');
-            kubernetes.setImages({
-                deployments,
-                tag,
-                image,
-                namespace,
-            });
-        }
+
+        logger.info(`Cluster confirmed: ${params.cluster}`);
+        return kubernetes
+            .setCluster(params.project, cluster)
+            .then(() => params);
+    }
+
+    return questions.askCluster(allClusters).then(answer => {
+        return kubernetes
+            .setCluster(params.project, answer.obj)
+            .then(() => params);
     });
+}
+
+function getImage(params) {
+    const images = containers.images(params.project);
+
+    if (params.image) {
+        const image = images.find(i => i.name === params.image);
+        if (!image) {
+            console.error(
+                `No image named ${params.image}. Available images:`,
+                images.map(i => i.name)
+            );
+            process.exit(1);
+            return null;
+        }
+        logger.info(`Image confirmed: ${params.image}`);
+        return params;
+    }
+
+    return questions.askContainerImage(images).then(answer => {
+        params.image = answer.name;
+        return params;
+    });
+}
+
+function getTag(params) {
+    const tags = containers.tags(params.project, params.image);
+
+    if (params.tag) {
+        if (!tags.find(t => t.tags[0] === params.tag)) {
+            console.error(`No tag ${params.tag}. Available tags for image ${params.image}:`, tags.map(t => t.tags[0]));
+            process.exit(1);
+            return null;
+        }
+        logger.info(`Tag confirmed: ${params.tag}`);
+        return params;
+    }
+
+    return questions
+        .askContainerImageTag({ image: params.image, tags })
+        .then(answer => {
+            params.tag = answer.id;
+            return params;
+        });
+}
+
+function getNamespace(params) {
+    return kubernetes.namespaces().then(namespaces => {
+        if (params.namespace) {
+            if (!namespaces.find(n => n.metadata.name === params.namespace)) {
+                console.error(
+                    `No namespace ${params.namespace}. Available namespaces:`,
+                    namespaces.map(n => n.metadata.name)
+                );
+                process.exit(1);
+                return null;
+            }
+            logger.info(`Namespace confirmed: ${params.namespace}`);
+            return params;
+        }
+
+        return questions.askNamespace(namespaces).then(answer => {
+            params.namespace = answer.name;
+            return params;
+        });
+    });
+}
+
+function getConfirmation(params) {
+    params.deployments = getDeployments(
+        params.namespace,
+        params.image,
+        params.tag
+    );
+
+    if (params.nonInteractive) {
+        return params;
+    }
+
+    return questions
+        .confirmDeploy({
+            deployments: params.deployments,
+            tag: params.tag,
+            image: params.image,
+            namespace: params.namespace,
+        })
+        .then(answer => {
+            if (answer.confirm !== true) {
+                logger.info('Confirmation denied. Aborting.');
+                process.exit(0);
+                return null;
+            }
+
+            return params;
+        });
+}
+
+function setImages(params) {
+    logger.info('Setting images...');
+    kubernetes.setImages({
+        deployments: params.deployments,
+        tag: params.tag,
+        image: params.image,
+        namespace: params.namespace,
+    });
+}
+
+function deploy(options) {
+    if (options.nonInteractive === true) {
+        for (const required of ['project', 'image', 'tag', 'namespace']) {
+            if (!options[required]) {
+                console.error(
+                    'For non-interactive mode all arguments must be provided!'
+                );
+                process.exit(1);
+                return null;
+            }
+        }
+    }
+
+    return getProject(options)
+        .then(getCluster)
+        .then(getImage)
+        .then(getTag)
+        .then(getNamespace)
+        .then(getConfirmation)
+        .then(setImages)
+        .catch(err => {
+            let message = 'Unknown error';
+
+            if (err && err.stdout) {
+                message = err.stdout.toString();
+            }
+
+            console.error(message);
+            process.exit(1);
+        });
+}
+
+program
+    .option(
+        '--non-interactive',
+        'Disables interactive mode. If set to true then all other options are required.'
+    )
+    .option('-p, --project [project]', 'The project to deploy to.')
+    .option('-c, --cluster [cluster]', 'The cluster to deploy to.')
+    .option('-n, --namespace [namespace]', 'The namespace to deploy to.')
+    .option('-i, --image [image]', 'The image to deploy.')
+    .option('-t, --tag [tag]', 'The image tag to deploy.')
+    .parse(process.argv);
+
+deploy(program);
