@@ -6,6 +6,7 @@ module.exports = {
     },
     rules: {
         'no-console': 0,
+        'arrow-body-style': 0,
         'arrow-parens': ['error', 'as-needed'],
         'comma-dangle': ['error', 'always-multiline'],
         'import/no-dynamic-require': 'off',
@@ -19,6 +20,7 @@ module.exports = {
         'no-mixed-operators': 'off',
         'wrap-iife': 'off',
         'no-confusing-arrow': 'off',
+        'no-restricted-syntax': 0,
         'space-before-function-paren': 'off',
         'generator-star-spacing': 'off',
         'max-len': ['error', 240],
