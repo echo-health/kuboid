@@ -32,19 +32,30 @@ function getDeployments(namespace, image, tag) {
     return deployments;
 }
 
-function getProject(params) {
-    if (params.project) {
+function getDeployProject(params) {
+    if (params.deployProject) {
         return Promise.resolve(params);
     }
 
-    return questions.askProject().then(p => {
-        params.project = p.id;
+    return questions.askProject('please select the project you wish to deploy to').then(p => {
+        params.deployProject = p.id;
+        return params;
+    });
+}
+
+function getContainerProject(params) {
+    if (params.containerProject) {
+        return Promise.resolve(params);
+    }
+
+    return questions.askProject('please select the project you wish to load containers from').then(p => {
+        params.containerProject = p.id;
         return params;
     });
 }
 
 function getCluster(params) {
-    const allClusters = clusters.all(params.project);
+    const allClusters = clusters.all(params.deployProject);
 
     if (params.cluster) {
         const cluster = allClusters.find(c => c.name === params.cluster);
@@ -60,19 +71,19 @@ function getCluster(params) {
 
         logger.info(`Cluster confirmed: ${params.cluster}`);
         return kubernetes
-            .setCluster(params.project, cluster)
+            .setCluster(params.deployProject, cluster)
             .then(() => params);
     }
 
     return questions.askCluster(allClusters).then(answer => {
         return kubernetes
-            .setCluster(params.project, answer.obj)
+            .setCluster(params.deployProject, answer.obj)
             .then(() => params);
     });
 }
 
 function getImage(params) {
-    const images = containers.images(params.project);
+    const images = containers.images(params.containerProject);
 
     if (params.image) {
         const image = images.find(i => i.name === params.image);
@@ -95,7 +106,7 @@ function getImage(params) {
 }
 
 function getTag(params) {
-    const tags = containers.tags(params.project, params.image);
+    const tags = containers.tags(params.containerProject, params.image);
 
     if (params.tag) {
         if (!tags.find(t => t.tags[0] === params.tag)) {
@@ -178,7 +189,7 @@ function setImages(params) {
 
 function deploy(options) {
     if (options.nonInteractive === true) {
-        for (const required of ['project', 'image', 'tag', 'namespace']) {
+        for (const required of ['containerProject', 'deployProject', 'image', 'tag', 'namespace']) {
             if (!options[required]) {
                 console.error(
                     'For non-interactive mode all arguments must be provided!'
@@ -189,8 +200,9 @@ function deploy(options) {
         }
     }
 
-    return getProject(options)
+    return getDeployProject(options)
         .then(getCluster)
+        .then(getContainerProject)
         .then(getImage)
         .then(getTag)
         .then(getNamespace)
@@ -213,7 +225,8 @@ program
         '--non-interactive',
         'Disables interactive mode. If set to true then all other options are required.'
     )
-    .option('-p, --project [project]', 'The project to deploy to.')
+    .option('-p, --deployProject [deployProject]', 'The project to deploy to.')
+    .option('-d, --containerProject [containerProject]', 'The project to load container images from.')
     .option('-c, --cluster [cluster]', 'The cluster to deploy to.')
     .option('-n, --namespace [namespace]', 'The namespace to deploy to.')
     .option('-i, --image [image]', 'The image to deploy.')
