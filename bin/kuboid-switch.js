@@ -9,7 +9,7 @@ const chalk = require('chalk');
 let project = {};
 
 questions
-    .askProject()
+    .askProject('which project would you like to switch to')
     .then(p => {
         project = p.id;
         return Promise.resolve(clusters.all(project));
