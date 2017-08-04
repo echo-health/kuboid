@@ -83,7 +83,7 @@ function getCluster(params) {
 }
 
 function getImage(params) {
-    const images = containers.images(params.containerProject);
+    const images = containers.images(params.containerProject ? params.containerProject : params.deployProject);
 
     if (params.image) {
         const image = images.find(i => i.name === params.image);
@@ -106,7 +106,7 @@ function getImage(params) {
 }
 
 function getTag(params) {
-    const tags = containers.tags(params.containerProject, params.image);
+    const tags = containers.tags(params.containerProject ? params.containerProject : params.deployProject, params.image);
 
     if (params.tag) {
         if (!tags.find(t => t.tags[0] === params.tag)) {
@@ -189,7 +189,7 @@ function setImages(params) {
 
 function deploy(options) {
     if (options.nonInteractive === true) {
-        for (const required of ['containerProject', 'deployProject', 'image', 'tag', 'namespace']) {
+        for (const required of ['deployProject', 'image', 'tag', 'namespace']) {
             if (!options[required]) {
                 console.error(
                     'For non-interactive mode all arguments must be provided!'
@@ -200,9 +200,13 @@ function deploy(options) {
         }
     }
 
-    return getDeployProject(options)
-        .then(getCluster)
-        .then(getContainerProject)
+    let promiseChain = getDeployProject(options)
+        .then(getCluster);
+    if (!options.nonInteractive) {
+        promiseChain = promiseChain.then(getContainerProject);
+    }
+
+    return promiseChain
         .then(getImage)
         .then(getTag)
         .then(getNamespace)
