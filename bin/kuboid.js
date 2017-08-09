@@ -13,5 +13,6 @@ require('../lib/dependencies')
             .command('deploy', 'deploy application')
             .command('generate', 'generate kubenetes config via templates')
             .command('exec', 'execute a command in a running container')
+            .command('images', 'list all images, the deployments they are being used in and their current and latest tags')
             .parse(process.argv)
     );
