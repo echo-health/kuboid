@@ -2,7 +2,7 @@
 const chalk = require('chalk');
 const Table = require('cli-table');
 const kubernetes = require('../lib/kubernetes');
-const containers = require('../lib/containers');
+const containersApi = require('../lib/containers');
 
 const cache = {};
 
@@ -12,9 +12,9 @@ function getTag(image, tag = null) {
         console.log('Getting', image, tag || 'latest');
         let info;
         if (tag) {
-            info = containers.tag(null, image, tag);
+            info = containersApi.tag(null, image, tag);
         } else {
-            info = containers.tags(null, image, 1)[0];
+            info = containersApi.tags(null, image, 1)[0];
         }
         cache[cacheKey] = {
             tag: info.tags[0],
@@ -37,7 +37,8 @@ const table = new Table({
 });
 
 for (const deployment of kubernetes.deployments()) {
-    for (const container of deployment.containers) {
+    const containers = deployment.containers.filter(c => c.image.startsWith('gcr.io/'));
+    for (const container of containers) {
         const latest = getTag(container.image);
         const current = getTag(container.image, container.tag);
         table.push([
