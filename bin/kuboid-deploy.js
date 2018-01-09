@@ -106,7 +106,7 @@ function getImage(params) {
 }
 
 function getTag(params) {
-    const tags = containers.tags(params.containerProject ? params.containerProject : params.deployProject, params.image);
+    const tags = containers.tags(params.containerProject ? params.containerProject : params.deployProject, params.image, params.limit ? parseInt(params.limit, 10) : 100);
 
     if (params.tag) {
         if (!tags.find(t => t.tags[0] === params.tag)) {
@@ -229,7 +229,8 @@ program
         '--non-interactive',
         'Disables interactive mode. If set to true then all other options are required.'
     )
-    .option('-p, --deployProject [deployProject]', 'The project to deploy to.')
+    .option('-l, --limit [limit]', 'Size of image tag list returned')
+    .option('-p, --deployproject [deployproject]', 'the project to deploy to.')
     .option('-d, --containerProject [containerProject]', 'The project to load container images from.')
     .option('-c, --cluster [cluster]', 'The cluster to deploy to.')
     .option('-n, --namespace [namespace]', 'The namespace to deploy to.')
